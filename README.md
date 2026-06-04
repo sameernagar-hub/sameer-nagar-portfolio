@@ -14,6 +14,7 @@ Personal portfolio for 2026 hiring, positioning Sameer Nagar as a Software Devel
 
 ## Project Structure
 
+<<<<<<< HEAD
 ```text
 .
 |-- index.html                  # Static portfolio page
@@ -29,6 +30,26 @@ Personal portfolio for 2026 hiring, positioning Sameer Nagar as a Software Devel
 |-- requirements.txt            # Python backend dependencies
 |-- .env.example                # Safe environment variable template
 `-- Profile (3).pdf             # Current resume source file
+=======
+- `index.html` - Main portfolio page.
+- `assets/css/style.css` - Responsive visual system.
+- `assets/js/script.js` - Navigation, filters, contact form, and chat widget.
+- `api/chat.js` - Serverless Google Gemini API proxy for the AI assistant.
+- `Sameer_Nagar_Resume.pdf` - Resume download linked from the portfolio.
+
+## AI Assistant
+
+The chat widget works in two modes:
+
+1. Local profile mode: always available in the browser with resume-aware fallback answers.
+2. Live AI mode: available when deployed with a serverless `/api/chat` endpoint and `GEMINI_API_KEY`.
+
+Create an environment variable in your hosting provider:
+
+```bash
+GEMINI_API_KEY=your_api_key_here
+GEMINI_MODEL=gemini-3.5-flash
+>>>>>>> 2086db037149a89fa54c2c365b4cb951bf098709
 ```
 
 ## Local Static Preview

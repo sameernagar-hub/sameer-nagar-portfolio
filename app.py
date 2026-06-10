@@ -6,7 +6,6 @@ from typing import Dict, List
 
 import streamlit as st
 from dotenv import load_dotenv
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 try:
     from google import genai
@@ -21,8 +20,6 @@ from profile_context import PROFILE_CONTEXT, SYSTEM_INSTRUCTION
 ROOT = Path(__file__).parent
 ASSET_DIR = ROOT / "assets"
 IMAGE_DIR = ASSET_DIR / "images"
-GENERATED_DIR = ASSET_DIR / "generated"
-RESUME_PATH = ROOT / "Profile (3).pdf"
 
 load_dotenv()
 
@@ -179,131 +176,17 @@ PROMPTS = [
 ]
 
 NAV_ITEMS = {
-    "AI Chat": "Ask the resume-aware assistant first.",
-    "About": "A command-center overview.",
+    "AI Chat": "Ask the responsive portfolio first.",
+    "About": "Live overview and signal map.",
     "Resume": "Experience, education, and credentials.",
     "Projects": "Selected work and engineering themes.",
     "Research": "Publications and ML/NLP signal.",
-    "Contact": "Links, resume, and outreach.",
+    "Contact": "Email, LinkedIn, and outreach.",
 }
 
 
 def safe_key(value: str) -> str:
     return re.sub(r"[^a-z0-9_]+", "_", value.lower()).strip("_")
-
-
-def get_font(size: int, bold: bool = False):
-    candidates = [
-        "C:/Windows/Fonts/CascadiaMono.ttf",
-        "C:/Windows/Fonts/CascadiaMono-SemiBold.ttf" if bold else "",
-        "C:/Windows/Fonts/consola.ttf",
-        "C:/Windows/Fonts/segoeui.ttf",
-    ]
-
-    for candidate in candidates:
-        if candidate and Path(candidate).exists():
-            return ImageFont.truetype(candidate, size=size)
-
-    return ImageFont.load_default()
-
-
-@st.cache_resource(show_spinner=False)
-def ensure_visual_assets() -> Dict[str, Path]:
-    GENERATED_DIR.mkdir(parents=True, exist_ok=True)
-    hero_path = GENERATED_DIR / "devtool-hero.png"
-    avatar_card_path = GENERATED_DIR / "agent-avatar-card.png"
-
-    if not hero_path.exists():
-        width, height = 1800, 1120
-        img = Image.new("RGB", (width, height), "#05070b")
-        draw = ImageDraw.Draw(img)
-
-        for y in range(height):
-            ratio = y / height
-            r = int(5 + 4 * ratio)
-            g = int(8 + 18 * ratio)
-            b = int(13 + 25 * ratio)
-            draw.line((0, y, width, y), fill=(r, g, b))
-
-        grid_color = (24, 41, 54)
-        for x in range(0, width, 72):
-            draw.line((x, 0, x, height), fill=grid_color, width=1)
-        for y in range(0, height, 72):
-            draw.line((0, y, width, y), fill=grid_color, width=1)
-
-        glow_layer = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-        glow = ImageDraw.Draw(glow_layer)
-        glow.ellipse((1060, 80, 1880, 840), fill=(34, 211, 238, 34))
-        glow.ellipse((-180, 560, 540, 1320), fill=(16, 185, 129, 24))
-        glow_layer = glow_layer.filter(ImageFilter.GaussianBlur(70))
-        img = Image.alpha_composite(img.convert("RGBA"), glow_layer)
-        draw = ImageDraw.Draw(img)
-
-        panel = (185, 120, 1565, 910)
-        draw.rounded_rectangle(panel, radius=34, fill=(8, 12, 20, 232), outline=(41, 58, 76), width=2)
-        draw.rounded_rectangle((panel[0], panel[1], panel[2], panel[1] + 78), radius=34, fill=(12, 19, 31, 255))
-        draw.rectangle((panel[0], panel[1] + 48, panel[2], panel[1] + 78), fill=(12, 19, 31, 255))
-
-        for i, color in enumerate([(239, 68, 68), (245, 158, 11), (34, 197, 94)]):
-            draw.ellipse((230 + i * 38, 146, 252 + i * 38, 168), fill=color)
-
-        mono = get_font(34)
-        mono_small = get_font(26)
-        mono_bold = get_font(42, bold=True)
-        draw.text((360, 137), "sameer-nagar.dev/agent", fill=(148, 163, 184), font=mono_small)
-
-        lines = [
-            ("$ boot portfolio --mode ai-first --theme cli-dark", (94, 234, 212)),
-            ("initializing resume-aware assistant...", (148, 163, 184)),
-            ("loading skills: python, backend, llms, salesforce, aws", (125, 211, 252)),
-            ("routing visitor to /ai-chat", (250, 204, 21)),
-            ("ready. ask anything about fit, projects, research, contact.", (74, 222, 128)),
-        ]
-        y = 265
-        for line, color in lines:
-            draw.text((245, y), line, fill=color, font=mono)
-            y += 68
-
-        draw.rounded_rectangle((245, 660, 1505, 805), radius=24, fill=(15, 23, 42, 230), outline=(45, 212, 191), width=2)
-        draw.text((285, 690), "AI Agent", fill=(250, 250, 250), font=mono_bold)
-        draw.text(
-            (285, 748),
-            "ChatGPT-style homepage for recruiters and hiring managers",
-            fill=(203, 213, 225),
-            font=mono_small,
-        )
-
-        for i, text in enumerate(["SDE", "AI/LLM", "Backend", "Salesforce", "Cloud"]):
-            x = 245 + i * 246
-            draw.rounded_rectangle((x, 845, x + 210, 902), radius=18, fill=(17, 24, 39), outline=(51, 65, 85))
-            draw.text((x + 26, 858), text, fill=(226, 232, 240), font=mono_small)
-
-        img.convert("RGB").save(hero_path, quality=95)
-
-    if not avatar_card_path.exists():
-        width, height = 1200, 1200
-        img = Image.new("RGB", (width, height), "#05070b")
-        draw = ImageDraw.Draw(img)
-        for y in range(height):
-            draw.line((0, y, width, y), fill=(4, int(9 + y / 120), int(15 + y / 80)))
-
-        avatar_path = IMAGE_DIR / "sameer-avatar.png"
-        if avatar_path.exists():
-            avatar = Image.open(avatar_path).convert("RGBA").resize((470, 470), Image.LANCZOS)
-            mask = Image.new("L", avatar.size, 0)
-            ImageDraw.Draw(mask).rounded_rectangle((0, 0, 470, 470), radius=56, fill=255)
-            img.paste(avatar, (365, 170), mask)
-
-        mono = get_font(38)
-        mono_bold = get_font(54, bold=True)
-        draw.rounded_rectangle((110, 730, 1090, 1055), radius=32, fill=(9, 14, 24), outline=(45, 212, 191), width=3)
-        draw.text((155, 775), "sameer.agent", fill=(94, 234, 212), font=mono)
-        draw.text((155, 835), "Software Development Engineer", fill=(248, 250, 252), font=mono_bold)
-        draw.text((155, 920), "AI | Backend | Salesforce | Cloud", fill=(203, 213, 225), font=mono)
-        draw.text((155, 985), "status: open_to_2026_roles", fill=(250, 204, 21), font=mono)
-        img.save(avatar_card_path, quality=95)
-
-    return {"hero": hero_path, "avatar_card": avatar_card_path}
 
 
 def inject_css() -> None:
@@ -724,6 +607,165 @@ def inject_css() -> None:
             font-size: 0.75rem;
           }
 
+          [data-testid="stRadio"] > div {
+            display: grid;
+            gap: 0.4rem;
+            padding: 0.35rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: rgba(15, 23, 42, 0.52);
+          }
+
+          [data-testid="stRadio"] label {
+            min-height: 38px;
+            padding: 0.48rem 0.7rem;
+            border: 1px solid transparent;
+            border-radius: var(--radius);
+            color: var(--soft) !important;
+            background: transparent;
+            transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+          }
+
+          [data-testid="stRadio"] label:hover {
+            border-color: rgba(45, 212, 191, 0.24);
+            background: rgba(20, 184, 166, 0.08);
+            transform: translateX(2px);
+          }
+
+          [data-testid="stRadio"] label:has(input:checked) {
+            border-color: rgba(45, 212, 191, 0.5);
+            color: var(--text) !important;
+            background: linear-gradient(90deg, rgba(20, 184, 166, 0.24), rgba(14, 165, 233, 0.1));
+          }
+
+          [data-testid="stRadio"] input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+          }
+
+          .live-agent-panel,
+          .live-system-card,
+          .outreach-card {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background:
+              linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(2, 6, 23, 0.72)),
+              repeating-linear-gradient(90deg, rgba(148, 163, 184, 0.07) 0 1px, transparent 1px 34px);
+          }
+
+          .live-agent-panel {
+            min-height: 440px;
+            padding: 1rem;
+          }
+
+          .live-agent-panel::before,
+          .live-system-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(90deg, transparent, rgba(45, 212, 191, 0.08), transparent);
+            animation: panel-scan 5.2s ease-in-out infinite;
+          }
+
+          .live-agent-header {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            padding-bottom: 0.85rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+            color: var(--soft);
+            font-family: "Cascadia Mono", "Consolas", monospace;
+            font-size: 0.78rem;
+          }
+
+          .message-preview {
+            position: relative;
+            z-index: 1;
+            margin-top: 1rem;
+            padding: 1rem;
+            border: 1px solid rgba(45, 212, 191, 0.2);
+            border-radius: var(--radius);
+            background: rgba(2, 6, 23, 0.66);
+          }
+
+          .message-preview p {
+            margin: 0;
+            color: var(--soft);
+            line-height: 1.75;
+          }
+
+          .typed-line {
+            display: inline-block;
+            max-width: 100%;
+            overflow: hidden;
+            border-right: 0.65em solid var(--teal);
+            white-space: nowrap;
+            animation: typing-line 4.2s steps(78, end) both, blink 1s steps(2, start) infinite;
+          }
+
+          .system-flow {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            gap: 0.65rem;
+            margin-top: 1rem;
+          }
+
+          .system-flow div {
+            min-height: 38px;
+            padding: 0.55rem 0.7rem;
+            border: 1px solid rgba(148, 163, 184, 0.14);
+            border-radius: var(--radius);
+            color: var(--soft);
+            font-family: "Cascadia Mono", "Consolas", monospace;
+            font-size: 0.78rem;
+            background: rgba(15, 23, 42, 0.64);
+            animation: float-in 520ms ease both;
+          }
+
+          .system-flow div:nth-child(2) { animation-delay: 120ms; }
+          .system-flow div:nth-child(3) { animation-delay: 240ms; }
+          .system-flow div:nth-child(4) { animation-delay: 360ms; }
+
+          .live-system-grid,
+          .outreach-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.8rem;
+            margin-top: 0.8rem;
+          }
+
+          .live-system-card,
+          .outreach-card {
+            min-height: 132px;
+            padding: 1rem;
+          }
+
+          .signal-meter {
+            height: 7px;
+            margin-top: 0.75rem;
+            border-radius: 999px;
+            background: rgba(148, 163, 184, 0.18);
+          }
+
+          .signal-meter span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, var(--teal), var(--amber));
+          }
+
+          @keyframes typing-line {
+            from { width: 0; }
+            to { width: 100%; }
+          }
+
           .timeline-item + .timeline-item {
             margin-top: 0.8rem;
           }
@@ -795,7 +837,9 @@ def inject_css() -> None:
             }
 
             .status-grid,
-            .prompt-stack {
+            .prompt-stack,
+            .live-system-grid,
+            .outreach-grid {
               grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
@@ -815,8 +859,16 @@ def inject_css() -> None:
             }
 
             .status-grid,
-            .prompt-stack {
+            .prompt-stack,
+            .live-system-grid,
+            .outreach-grid {
               grid-template-columns: 1fr;
+            }
+
+            .typed-line {
+              white-space: normal;
+              border-right: 0;
+              animation: none;
             }
 
             .terminal-body {
@@ -917,7 +969,10 @@ def local_assistant_response(user_message: str) -> str:
     )
 
     if includes_any(message, ["hello", "hi", "hey"]):
-        return "Hi, I'm Sameer's resume-aware portfolio assistant. Ask me about AI/LLM work, backend systems, Salesforce credentials, AWS experience, research, projects, leadership, or fit for a role."
+        return "Hi, I'm Sameer's portfolio assistant. Ask me about AI/LLM work, backend systems, Salesforce credentials, AWS experience, research, projects, leadership, contact channels, or fit for a role."
+
+    if includes_any(message, ["introduce", "30 seconds", "overview", "summary"]):
+        return "Sameer in 30 seconds: Sameer Nagar is a Software Development Engineer and CSUF MS Computer Science graduate focused on AI-ready backend systems, LLM product flows, Salesforce and Agentforce automation, AWS/cloud applications, research-backed ML/NLP work, and practical enterprise software."
 
     if includes_any(message, ["hire", "why should we hire", "why hire"]):
         return "\n".join(
@@ -963,7 +1018,7 @@ def local_assistant_response(user_message: str) -> str:
         return f"You can reach Sameer at {PROFILE['email']}, call {PROFILE['phone']}, view LinkedIn at {PROFILE['linkedin']}, see GitHub at {PROFILE['github']}, or review Google Scholar at {PROFILE['scholar']}."
 
     if includes_any(message, ["resume", "cv", "download"]):
-        return "Sameer's resume is available from the sidebar and contact page as Sameer_Nagar_Resume.pdf."
+        return "This portfolio is designed as a live, role-specific summary surface instead of a download-first flow. Ask for a targeted summary, project evidence, or job-description match, then reach Sameer by email or LinkedIn from the contact page."
 
     if includes_any(message, ["education", "school", "degree", "gpa", "csuf", "university", "graduate"]):
         return "Sameer earned an MS in Computer Science from California State University, Fullerton, graduating in May 2026 with a 3.70/4.00 GPA. He also earned a BTech in Computer Science from Rajiv Gandhi Proudyogiki Vishwavidyalaya."
@@ -1005,7 +1060,7 @@ def ask_assistant(message: str, history: List[Dict[str, str]]) -> str:
 
     try:
         response = model.models.generate_content(
-            model=os.getenv("GEMINI_MODEL", "gemini-3.5-flash"),
+            model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
             contents=gemini_history,
             config=genai_types.GenerateContentConfig(system_instruction=SYSTEM_INSTRUCTION),
         )
@@ -1052,7 +1107,7 @@ def render_sidebar() -> None:
             """
             <div class="sidebar-brand">
               <h2>sameer.dev</h2>
-              <p>AI-first CLI portfolio shell</p>
+              <p>Responsive AI portfolio surface</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1096,19 +1151,9 @@ def render_sidebar() -> None:
         st.link_button("LinkedIn", PROFILE["linkedin"], width="stretch")
         st.link_button("GitHub", PROFILE["github"], width="stretch")
         st.link_button("Google Scholar", PROFILE["scholar"], width="stretch")
-        if RESUME_PATH.exists():
-            with RESUME_PATH.open("rb") as resume_file:
-                st.download_button(
-                    "Download resume",
-                    resume_file,
-                    file_name="Sameer_Nagar_Resume.pdf",
-                    mime="application/pdf",
-                    width="stretch",
-                )
 
 
 def render_chat_page() -> None:
-    assets = ensure_visual_assets()
     left, right = st.columns([1.08, 0.92], gap="large")
 
     with left:
@@ -1135,7 +1180,7 @@ def render_chat_page() -> None:
 
         if not st.session_state.messages:
             st.chat_message("assistant").markdown(
-                "Hi, I'm Sameer's resume-aware AI assistant. Ask about backend engineering, AI/LLM apps, Salesforce credentials, AWS work, CSUF education, publications, leadership, or fit for a role."
+                "Hi, I'm Sameer's portfolio assistant. I can walk you through his AI, backend, Salesforce, cloud, research, leadership, and project work using grounded context."
             )
 
         for message in st.session_state.messages:
@@ -1160,9 +1205,26 @@ def render_chat_page() -> None:
             st.rerun()
 
     with right:
-        st.markdown('<div class="terminal-image">', unsafe_allow_html=True)
-        st.image(str(assets["avatar_card"]), width="stretch")
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(
+            """
+            <div class="live-agent-panel">
+              <div class="live-agent-header">
+                <span>sameer.agent</span>
+                <span class="log-green">ready</span>
+              </div>
+              <div class="message-preview">
+                <p><span class="typed-line">Hi, I can walk you through Sameer's AI projects, backend systems, Salesforce credentials, cloud work, research, and leadership.</span></p>
+              </div>
+              <div class="system-flow">
+                <div><span class="log-cyan">context</span>: profile, projects, credentials, publications</div>
+                <div><span class="log-amber">guardrail</span>: grounded answers, no invented metrics</div>
+                <div><span class="log-green">action</span>: ask a role-fit or project-evidence question</div>
+                <div><span class="log-cyan">contact</span>: email or LinkedIn when ready</div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         render_section_heading("agent context", "What the assistant knows")
         render_card(
             "context.locked",
@@ -1179,16 +1241,15 @@ def render_chat_page() -> None:
 
 
 def render_about_page() -> None:
-    assets = ensure_visual_assets()
     st.markdown(
         """
         <div class="hero-terminal">
           <div class="hero-copy">
             <div class="kicker">$ open sameer.profile <span class="cursor"></span></div>
-            <h1 class="hero-title">Developer portfolio, rebuilt as a dark AI command center.</h1>
+            <h1 class="hero-title">Sameer Nagar, presented as a live AI-ready portfolio.</h1>
             <p class="hero-subtitle">
-              Sameer Nagar is a Software Development Engineer building AI-powered backend systems,
-              enterprise automation, Salesforce/Agentforce workflows, and intelligent cloud applications.
+              Ask the portfolio for context, inspect the strongest engineering signals, then start a conversation
+              through email or LinkedIn when the fit is clear.
             </p>
           </div>
           <div class="terminal-window">
@@ -1203,7 +1264,7 @@ def render_about_page() -> None:
               <div class="log-cyan">role: Software Development Engineer</div>
               <div class="log-muted">stack: Python, Java, JS, APIs, cloud, LLMs</div>
               <div class="log-amber">signal: MS CSUF 2026, Salesforce x5, ML/NLP publications</div>
-              <div class="log-green">ready: ask the AI agent first</div>
+              <div class="log-green">ready: ask the portfolio first</div>
             </div>
           </div>
         </div>
@@ -1212,8 +1273,32 @@ def render_about_page() -> None:
     )
     render_metric_grid()
 
-    render_section_heading("visual system", "Upscaled dev-tool graphics")
-    st.image(str(assets["hero"]), width="stretch")
+    render_section_heading("live system", "Responsive signal map")
+    st.markdown(
+        """
+        <div class="live-system-grid">
+          <div class="live-system-card">
+            <div class="card-label">backend</div>
+            <div class="card-title">Service logic</div>
+            <div class="card-copy">APIs, validation layers, database-backed workflows, and maintainable application behavior.</div>
+            <div class="signal-meter"><span style="width: 92%"></span></div>
+          </div>
+          <div class="live-system-card">
+            <div class="card-label">ai product</div>
+            <div class="card-title">Usable intelligence</div>
+            <div class="card-copy">LLM flows, fallback behavior, anomaly review, prompt UX, and grounded assistant responses.</div>
+            <div class="signal-meter"><span style="width: 88%"></span></div>
+          </div>
+          <div class="live-system-card">
+            <div class="card-label">enterprise</div>
+            <div class="card-title">Workflow clarity</div>
+            <div class="card-copy">Salesforce, Agentforce, automation stories, stakeholder needs, and repeatable delivery patterns.</div>
+            <div class="signal-meter"><span style="width: 86%"></span></div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     render_section_heading("focus", "Engineering lanes")
     col1, col2, col3, col4 = st.columns(4)
@@ -1341,7 +1426,7 @@ def render_research_page() -> None:
 
 def render_contact_page() -> None:
     st.markdown('<div class="kicker">$ open contact.channels <span class="cursor"></span></div>', unsafe_allow_html=True)
-    st.title("Contact")
+    st.title("Start a Conversation")
 
     c1, c2 = st.columns([0.9, 1.1], gap="large")
     with c1:
@@ -1349,7 +1434,7 @@ def render_contact_page() -> None:
             f"""
             <div class="contact-panel">
               <div class="card-label">direct</div>
-              <div class="card-title">Let's build useful systems.</div>
+              <div class="card-title">Reach Sameer where the conversation is easiest.</div>
               <div class="card-copy">
                 Email: {PROFILE['email']}<br>
                 Phone: {PROFILE['phone']}<br>
@@ -1359,22 +1444,35 @@ def render_contact_page() -> None:
             """,
             unsafe_allow_html=True,
         )
-        st.link_button("Email Sameer", f"mailto:{PROFILE['email']}", width="stretch")
+        st.link_button("Email Sameer", f"mailto:{PROFILE['email']}?subject=Portfolio%20conversation%20with%20Sameer%20Nagar", width="stretch")
         st.link_button("LinkedIn", PROFILE["linkedin"], width="stretch")
         st.link_button("GitHub", PROFILE["github"], width="stretch")
         st.link_button("Google Scholar", PROFILE["scholar"], width="stretch")
-        if RESUME_PATH.exists():
-            with RESUME_PATH.open("rb") as resume_file:
-                st.download_button(
-                    "Download resume",
-                    resume_file,
-                    file_name="Sameer_Nagar_Resume.pdf",
-                    mime="application/pdf",
-                    width="stretch",
-                )
 
     with c2:
-        render_section_heading("quick message", "Recruiter prompt")
+        render_section_heading("message options", "Email or LinkedIn")
+        st.markdown(
+            """
+            <div class="outreach-grid">
+              <div class="outreach-card">
+                <div class="card-label">email</div>
+                <div class="card-title">Structured follow-up</div>
+                <div class="card-copy">Use the draft below when you want role context, project fit, or availability in one clean note.</div>
+              </div>
+              <div class="outreach-card">
+                <div class="card-label">linkedin</div>
+                <div class="card-title">Fast conversation</div>
+                <div class="card-copy">Start a quick message after the AI assistant summarizes Sameer's strongest signals for your role.</div>
+              </div>
+              <div class="outreach-card">
+                <div class="card-label">proof</div>
+                <div class="card-title">Projects and papers</div>
+                <div class="card-copy">Review GitHub and Scholar when you want implementation and research context before reaching out.</div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         default_message = textwrap.dedent(
             f"""
             Hi Sameer,
@@ -1394,7 +1492,6 @@ def render_contact_page() -> None:
 def main() -> None:
     init_state()
     inject_css()
-    ensure_visual_assets()
     sync_active_session()
     render_sidebar()
 

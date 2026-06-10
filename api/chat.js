@@ -48,7 +48,7 @@ module.exports = async function handler(req, res) {
   }
 
   const history = formatHistoryForGemini(body.history || []);
-  const modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+  const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
   const systemInstruction = `${SYSTEM_INSTRUCTION}\n\nPortfolio context:\n${PROFILE_CONTEXT}`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);

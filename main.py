@@ -48,7 +48,7 @@ model = None
 if api_key:
     genai.configure(api_key=api_key, transport="rest")
     model = genai.GenerativeModel(
-        os.getenv("GEMINI_MODEL", "gemini-3.5-flash"),
+        os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
         system_instruction=SYSTEM_INSTRUCTION,
     )
 

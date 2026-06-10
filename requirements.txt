@@ -6,4 +6,3 @@ motor
 python-dotenv
 pydantic
 streamlit
-pillow

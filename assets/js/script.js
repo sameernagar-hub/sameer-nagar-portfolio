@@ -4,10 +4,10 @@ document.documentElement.classList.add('js');
 
 const portfolioData = {
   prompts: [
+    { label: 'Introduce Sameer in 30 seconds.', prompt: 'Introduce Sameer in 30 seconds.' },
     { label: 'Why should we hire Sameer?', prompt: 'Why should we hire Sameer?' },
-    { label: 'Summarize Sameer for an AI engineering role.', prompt: 'Summarize Sameer for an AI engineering role.' },
-    { label: 'Which project best shows Sameer\'s backend skills?', prompt: 'Which project best shows Sameer\'s backend skills?' },
-    { label: 'How does Sameer fit a consulting/technology role?', prompt: 'How does Sameer fit a consulting/technology role?' },
+    { label: 'Show his strongest AI work.', prompt: 'Summarize Sameer for an AI engineering role.' },
+    { label: 'Show backend project signals.', prompt: 'Which project best shows Sameer\'s backend skills?' },
     { label: 'Match Sameer to this job description.', prompt: 'Match Sameer to this job description:', prefill: true }
   ],
   categories: [
@@ -320,6 +320,16 @@ const toggleActive = (element) => {
   if (element) element.classList.toggle('active');
 };
 
+const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const updateSlidingIndicator = (container, activeElement, xVar, widthVar) => {
+  if (!container || !activeElement) return;
+  const containerRect = container.getBoundingClientRect();
+  const activeRect = activeElement.getBoundingClientRect();
+  container.style.setProperty(xVar, `${activeRect.left - containerRect.left}px`);
+  container.style.setProperty(widthVar, `${activeRect.width}px`);
+};
+
 const renderPrompts = () => {
   document.querySelectorAll('[data-prompt-list]').forEach((container) => {
     container.innerHTML = '';
@@ -466,6 +476,12 @@ if (sidebarBtn) {
 
 const navigationLinks = document.querySelectorAll('.navbar [data-nav-link]');
 const pages = document.querySelectorAll('[data-page]');
+const navList = document.querySelector('[data-nav-list]');
+
+const updateNavIndicator = () => {
+  const activeNav = document.querySelector('.navbar [data-nav-link].active');
+  updateSlidingIndicator(navList, activeNav, '--nav-indicator-x', '--nav-indicator-width');
+};
 
 const showPage = (targetPage) => {
   if (!targetPage) return;
@@ -477,6 +493,8 @@ const showPage = (targetPage) => {
   navigationLinks.forEach((navLink) => {
     navLink.classList.toggle('active', navLink.dataset.target === targetPage);
   });
+
+  updateNavIndicator();
 
   requestAnimationFrame(() => {
     document.querySelectorAll(`[data-page="${targetPage}"] .reveal`).forEach((element) => {
@@ -491,11 +509,20 @@ navigationLinks.forEach((link) => {
   link.addEventListener('click', () => showPage(link.dataset.target));
 });
 
+requestAnimationFrame(updateNavIndicator);
+window.addEventListener('resize', updateNavIndicator);
+
 const filterButtons = document.querySelectorAll('[data-filter-btn]');
 const filterItems = document.querySelectorAll('[data-filter-item]');
 const select = document.querySelector('[data-select]');
 const selectItems = document.querySelectorAll('[data-select-item]');
 const selectValue = document.querySelector('[data-select-value]');
+const filterList = document.querySelector('[data-project-filters]');
+
+const updateFilterIndicator = () => {
+  const activeFilter = document.querySelector('[data-filter-btn].active');
+  updateSlidingIndicator(filterList, activeFilter, '--filter-indicator-x', '--filter-indicator-width');
+};
 
 const filterProjects = (filter) => {
   filterItems.forEach((item) => {
@@ -514,6 +541,7 @@ filterButtons.forEach((button) => {
 
     if (selectValue) selectValue.textContent = button.textContent.trim();
     filterProjects(filter);
+    updateFilterIndicator();
   });
 });
 
@@ -534,8 +562,12 @@ selectItems.forEach((item) => {
     });
 
     filterProjects(filter);
+    updateFilterIndicator();
   });
 });
+
+requestAnimationFrame(updateFilterIndicator);
+window.addEventListener('resize', updateFilterIndicator);
 
 const themeToggle = document.querySelector('[data-theme-toggle]');
 const storedTheme = localStorage.getItem('portfolio_theme');
@@ -626,7 +658,54 @@ const chatSendBtn = document.getElementById('chatSendBtn');
 const CHAT_SESSIONS_KEY = 'agent_chat_sessions';
 const ACTIVE_CHAT_KEY = 'agent_active_chat';
 const LEGACY_HISTORY_KEY = 'agent_history';
-const assistantGreeting = "Hi, I'm Sameer's resume-aware AI assistant. Ask me about his backend engineering, AI/LLM apps, Salesforce credentials, AWS work, CSUF education, research, leadership, or case studies.";
+const assistantGreeting = "Hi, I'm Sameer's portfolio assistant. I can walk you through his AI, backend, Salesforce, cloud, research, leadership, and project work using grounded context.";
+const heroIntroText = "Hi, I'm Sameer's portfolio assistant. I can walk you through his AI projects, backend systems, Salesforce credentials, cloud work, research, and leadership without making you dig through a static page.";
+
+const startHeroIntro = () => {
+  const target = document.querySelector('[data-typed-intro]');
+  const state = document.querySelector('[data-agent-state]');
+  const steps = Array.from(document.querySelectorAll('[data-agent-step]'));
+
+  if (!target) return;
+
+  const setStep = (index) => {
+    steps.forEach((step, stepIndex) => {
+      step.classList.toggle('active', stepIndex <= index);
+    });
+    if (state) {
+      state.textContent = index >= steps.length - 1 ? 'ready' : 'syncing';
+    }
+  };
+
+  if (prefersReducedMotion) {
+    target.textContent = heroIntroText;
+    target.classList.add('is-complete');
+    setStep(steps.length - 1);
+    return;
+  }
+
+  target.textContent = '';
+  setStep(0);
+  let index = 0;
+
+  const typeNext = () => {
+    target.textContent = heroIntroText.slice(0, index);
+
+    if (index === 46) setStep(1);
+    if (index === 118) setStep(2);
+
+    if (index >= heroIntroText.length) {
+      target.classList.add('is-complete');
+      setStep(steps.length - 1);
+      return;
+    }
+
+    index += 1;
+    window.setTimeout(typeNext, index < 12 ? 42 : 18);
+  };
+
+  window.setTimeout(typeNext, 450);
+};
 
 const createSessionId = () => {
   if (window.crypto?.randomUUID) return window.crypto.randomUUID();
@@ -843,7 +922,11 @@ const localAssistantResponse = (userMessage) => {
   const contactLine = `You can reach Sameer at ${profileContext.contact.email}, LinkedIn at ${profileContext.contact.linkedin}, GitHub at ${profileContext.contact.github}, or Google Scholar at ${profileContext.contact.scholar}.`;
 
   if (includesAny(message, ['hello', 'hi', 'hey'])) {
-    return "**Hi, I'm Sameer's resume-aware portfolio assistant.**\n\nAsk me about his AI/LLM work, backend systems, Salesforce credentials, AWS experience, research, projects, leadership, or fit for a role.";
+    return "**Hi, I'm Sameer's portfolio assistant.**\n\nAsk me about his AI/LLM work, backend systems, Salesforce credentials, AWS experience, research, projects, leadership, contact channels, or fit for a role.";
+  }
+
+  if (includesAny(message, ['introduce', '30 seconds', 'overview', 'summary'])) {
+    return "**Sameer in 30 seconds:** Sameer Nagar is a Software Development Engineer and CSUF MS Computer Science graduate focused on AI-ready backend systems, LLM product flows, Salesforce and Agentforce automation, AWS/cloud applications, research-backed ML/NLP work, and practical enterprise software.";
   }
 
   if (includesAny(message, ['hire', 'why should we hire', 'why hire'])) {
@@ -895,7 +978,7 @@ const localAssistantResponse = (userMessage) => {
   }
 
   if (includesAny(message, ['resume', 'cv', 'download'])) {
-    return "Sameer's resume download is linked in the sidebar, hero, and contact sections. The download is served as Sameer_Nagar_Resume.pdf.";
+    return "This portfolio focuses on live context instead of a download-first flow. Ask me for a role-specific summary, project evidence, or a job-description match, then reach Sameer by email or LinkedIn from the contact section.";
   }
 
   if (includesAny(message, ['education', 'school', 'degree', 'gpa', 'csuf', 'university', 'graduate'])) {
@@ -1064,6 +1147,8 @@ if (clearHistoryBtn) {
     }
   });
 }
+
+startHeroIntro();
 
 window.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.page.active .reveal').forEach((element) => {
